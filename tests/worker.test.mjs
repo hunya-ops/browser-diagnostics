@@ -68,15 +68,13 @@ test("returns health status without invoking assets", async () => {
 test("ships the expected static page", async () => {
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
   const script = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(html, /浏览器诊断信息/);
+  assert.match(html, /快速检查/);
+  assert.match(html, /诊断明细/);
+  assert.match(html, /下载 JSON/);
   assert.match(html, /复制完整报告/);
+  assert.doesNotMatch(html, /回传内容预览|复制这段内容|reportPreview/);
   assert.match(html, /\.\/app\.js/);
-  assert.doesNotMatch(html, /回传内容预览|诊断明细|快速检查|下载 JSON/);
-  assert.equal((html.match(/<button\b/g) || []).length, 1);
-  assert.match(script, /\[User-Agent\]/);
-  assert.match(script, /\[Client Hints - JavaScript\]/);
-  assert.match(script, /\[Display\]/);
-  assert.match(script, /\[Input\]/);
-  assert.match(script, /\[Device \/ Locale \/ Network\]/);
-  assert.match(script, /\[Server Header Echo\]/);
   assert.match(script, /copyText\(currentReport\)/);
+  assert.doesNotMatch(script, /reportPreview|copyPreviewButton/);
 });
