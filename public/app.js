@@ -39,6 +39,9 @@ const elements = {
   finding: document.getElementById("finding"),
   detailSections: document.getElementById("detailSections"),
   copyButton: document.getElementById("copyButton"),
+  reportLink: document.getElementById("reportLink"),
+  shareButton: document.getElementById("shareButton"),
+  shareStatus: document.getElementById("shareStatus"),
   downloadButton: document.getElementById("downloadButton"),
   refreshButton: document.getElementById("refreshButton"),
   toast: document.getElementById("toast"),
@@ -46,6 +49,8 @@ const elements = {
 
 let currentData = null;
 let currentReport = "";
+let currentReportUrl = "";
+let collectionVersion = 0;
 let toastTimer = null;
 
 function defined(value) {
@@ -652,28 +657,93 @@ function render(data) {
   elements.detailSections.replaceChildren(...groups);
 }
 
+function setShareLoading() {
+  currentReportUrl = "";
+  elements.reportLink.hidden = true;
+  elements.reportLink.removeAttribute("href");
+  elements.reportLink.textContent = "";
+  elements.shareButton.disabled = true;
+  elements.shareButton.textContent = "正在生成报告链接…";
+  elements.shareStatus.className = "share-report__note";
+  elements.shareStatus.textContent = "链接有效期为 7 天，请只发给需要查看报告的人。";
+}
+
+function setShareReady(url) {
+  currentReportUrl = url;
+  elements.reportLink.href = url;
+  elements.reportLink.textContent = url;
+  elements.reportLink.hidden = false;
+  elements.shareButton.disabled = false;
+  elements.shareButton.textContent = "复制报告链接";
+  elements.shareStatus.className = "share-report__note";
+  elements.shareStatus.textContent = "链接有效期为 7 天，请只发给需要查看报告的人。";
+}
+
+function setShareError() {
+  const canRetry = Boolean(currentReport);
+  currentReportUrl = "";
+  elements.reportLink.hidden = true;
+  elements.shareButton.disabled = !canRetry;
+  elements.shareButton.textContent = canRetry ? "重新生成链接" : "报告链接不可用";
+  elements.shareStatus.className = "share-report__note is-error";
+  elements.shareStatus.textContent = canRetry
+    ? "报告链接生成失败，请重试。"
+    : "完整报告未生成，暂时无法创建链接。";
+}
+
+async function createReportLink(report, version = collectionVersion) {
+  elements.shareButton.disabled = true;
+  elements.shareButton.textContent = "正在生成报告链接…";
+  elements.shareStatus.className = "share-report__note";
+
+  try {
+    const response = await fetch("./api/reports", {
+      method: "POST",
+      cache: "no-store",
+      credentials: "omit",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ report }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    if (version !== collectionVersion || report !== currentReport) return;
+    if (typeof payload.path !== "string" || !/^\/r\/[a-f0-9]{32}$/.test(payload.path)) {
+      throw new Error("missing report path");
+    }
+    setShareReady(new URL(payload.path, location.origin).href);
+  } catch {
+    if (version === collectionVersion && report === currentReport) setShareError();
+  }
+}
+
 async function collect() {
+  const version = ++collectionVersion;
   elements.collectionStatus.textContent = "正在采集…";
   elements.refreshButton.disabled = true;
   elements.copyButton.disabled = true;
   elements.copyButton.textContent = "正在生成报告…";
   currentData = null;
   currentReport = "";
+  setShareLoading();
 
   try {
     const local = collectLocalData();
     const [clientHints, server] = await Promise.all([readClientHints(), readServerHeaders()]);
     currentData = { ...local, clientHints, server };
     render(currentData);
+    if (version !== collectionVersion) return;
     elements.copyButton.textContent = "复制完整报告";
     elements.copyButton.disabled = false;
+    await createReportLink(currentReport, version);
   } catch {
+    if (version !== collectionVersion) return;
     currentData = null;
     currentReport = "";
     elements.collectionStatus.textContent = "报告生成失败，请刷新重试";
     elements.copyButton.textContent = "报告生成失败";
+    setShareError();
   } finally {
-    elements.refreshButton.disabled = false;
+    if (version === collectionVersion) elements.refreshButton.disabled = false;
   }
 }
 
@@ -715,6 +785,21 @@ async function handleCopy() {
   }
 }
 
+async function handleShare() {
+  if (currentReportUrl) {
+    try {
+      await copyText(currentReportUrl);
+      showToast("报告链接已复制。 ");
+    } catch (error) {
+      showToast(`复制失败：${error?.message || "请手动复制链接"}`);
+    }
+    return;
+  }
+
+  if (!currentReport) return;
+  await createReportLink(currentReport);
+}
+
 function downloadJson() {
   if (!currentData) return;
   const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: "application/json;charset=utf-8" });
@@ -731,6 +816,7 @@ function downloadJson() {
 }
 
 elements.copyButton.addEventListener("click", handleCopy);
+elements.shareButton.addEventListener("click", handleShare);
 elements.downloadButton.addEventListener("click", downloadJson);
 elements.refreshButton.addEventListener("click", collect);
 window.addEventListener("online", collect);

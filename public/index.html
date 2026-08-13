@@ -36,7 +36,7 @@
       <section class="privacy-band" aria-label="隐私说明">
         <div class="content-width privacy-band__inner">
           <span class="privacy-band__indicator" aria-hidden="true"></span>
-          <p>信息只在本页整理；不会读取或复制 Cookie、账号信息和完整 URL 参数。</p>
+          <p>报告会临时保存 7 天；不会读取或保存 Cookie、账号信息和完整 URL 参数。</p>
           <span id="collectionStatus" class="collection-status" role="status">正在采集…</span>
         </div>
       </section>
@@ -60,6 +60,13 @@
         <button class="button button--primary copy-button" id="copyButton" type="button" disabled>
           正在生成报告…
         </button>
+        <div class="share-report" aria-live="polite">
+          <a class="share-report__link" id="reportLink" hidden></a>
+          <button class="button share-report__button" id="shareButton" type="button" disabled>
+            正在生成报告链接…
+          </button>
+          <p class="share-report__note" id="shareStatus">链接有效期为 7 天，请只发给需要查看报告的人。</p>
+        </div>
       </section>
 
       <section class="details-band">

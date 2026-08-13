@@ -2,21 +2,22 @@
 
 部署在 Cloudflare Workers 上的浏览器诊断信息页，用于收集并回传：
 
-线上地址：<https://browser.9ba.in/>
+线上地址：<https://ua.9ba.in/>、<https://browser.9ba.in/>
 
 - 浏览器 `User-Agent` 以及常见移动端关键词命中情况
 - JavaScript `navigator.userAgentData` 返回的 Client Hints
 - 服务器实际收到的 `Sec-CH-UA-*` 等请求头
 - 屏幕、视口、DPR、方向、触控、指针、语言、时区和网络能力
 - UA 与 `Sec-CH-UA-Mobile` 是否存在明显冲突
+- 自动生成可分享的只读报告链接
 
-页面不会回显 Cookie、Authorization、完整 URL 查询参数、来源页面或本地文件路径。
+页面不会回显 Cookie、Authorization、完整 URL 查询参数、来源页面或本地文件路径。分享报告使用不可枚举的随机 ID 保存到 Cloudflare KV，并在 7 天后自动过期。
 
 ## 项目结构
 
 ```text
-public/             静态诊断页面
-src/index.js        Worker API 与统一响应头
+public/             静态诊断页面与分享报告样式
+src/index.js        Worker API、报告读写路由与统一响应头
 tests/              Worker 行为测试
 wrangler.jsonc      Cloudflare Workers 配置
 ```
@@ -42,7 +43,7 @@ npx wrangler login
 npm run deploy
 ```
 
-Worker 会处理 `/api/headers` 和 `/health`，其他请求交给 Workers Static Assets。所有响应都会附加 `Accept-CH`，让后续同源请求携带浏览器允许提供的 Client Hints。
+Worker 会处理 `/api/headers`、`/api/reports`、`/r/:id` 和 `/health`，其他请求交给 Workers Static Assets。所有响应都会附加 `Accept-CH`，让后续同源请求携带浏览器允许提供的 Client Hints。
 
 `wrangler.jsonc` 已固定目标 Cloudflare Account。CLI 部署时仍应使用项目独立认证 Profile，避免依赖全局默认登录：
 
@@ -70,3 +71,5 @@ npm test
 ## 隐私边界
 
 `/api/headers` 只回显代码中明确列出的诊断请求头。Cookie、Authorization、Referer、Cloudflare 访客 IP 和其他未列入白名单的请求头不会出现在报告中。
+
+`/api/reports` 只接受同源请求、限定结构的诊断报告和最多 64 KiB 的内容。报告保存在 `REPORTS` KV 中，设置 7 天 TTL；`/r/:id` 返回只读、禁止索引的报告页面。任何获得分享链接的人都可以在有效期内查看对应报告。

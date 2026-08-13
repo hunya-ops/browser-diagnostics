@@ -14,6 +14,12 @@
       "custom_domain": true
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "REPORTS",
+      "id": "08099462fac04538b9f82be6c194debf"
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
