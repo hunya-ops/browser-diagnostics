@@ -2,6 +2,8 @@
 
 部署在 Cloudflare Workers 上的浏览器诊断信息页，用于收集并回传：
 
+线上地址：<https://browser.9ba.in/>
+
 - 浏览器 `User-Agent` 以及常见移动端关键词命中情况
 - JavaScript `navigator.userAgentData` 返回的 Client Hints
 - 服务器实际收到的 `Sec-CH-UA-*` 等请求头

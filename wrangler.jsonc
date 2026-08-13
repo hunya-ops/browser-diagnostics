@@ -4,6 +4,12 @@
   "account_id": "b9851cc811f85bf0187b87488e2fd2f8",
   "main": "./src/index.js",
   "compatibility_date": "2026-08-13",
+  "routes": [
+    {
+      "pattern": "browser.9ba.in",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
