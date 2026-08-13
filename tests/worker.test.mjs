@@ -29,15 +29,125 @@ const env = {
   },
 };
 
-const sampleReport = [
+const sampleData = {
+  generatedAt: "2026-08-13T04:00:00.000Z",
+  page: {
+    urlWithoutQuery: "https://diagnostics.example/",
+    protocol: "https:",
+    secureContext: true,
+  },
+  userAgent: {
+    navigatorUserAgent: "test <script>alert(1)</script>",
+    appVersion: "test app version",
+    platform: "TestOS",
+    vendor: "Test Vendor",
+  },
+  display: {
+    screen: {
+      width: 1440,
+      height: 900,
+      availWidth: 1440,
+      availHeight: 860,
+      colorDepth: 24,
+      pixelDepth: 24,
+      orientation: { type: "landscape-primary", angle: 0 },
+    },
+    viewport: {
+      innerWidth: 1280,
+      innerHeight: 720,
+      clientWidth: 1280,
+      clientHeight: 720,
+      outerWidth: 1280,
+      outerHeight: 800,
+    },
+    visualViewport: { width: 1280, height: 720, scale: 1 },
+    devicePixelRatio: 2,
+    estimatedPhysicalScreen: { width: 2880, height: 1800 },
+  },
+  input: {
+    maxTouchPoints: 0,
+    touchEventAvailable: false,
+    pointerCoarse: false,
+    pointerFine: true,
+    hover: true,
+    anyPointerCoarse: false,
+    anyPointerFine: true,
+    anyHover: true,
+  },
+  device: {
+    hardwareConcurrency: 8,
+    deviceMemoryGiB: 8,
+    cookieEnabled: true,
+    online: true,
+    doNotTrack: null,
+    pdfViewerEnabled: true,
+    standaloneDisplay: false,
+  },
+  locale: {
+    language: "zh-CN",
+    languages: ["zh-CN", "zh"],
+    timeZone: "Asia/Shanghai",
+    locale: "zh-CN",
+  },
+  network: { effectiveType: "4g", downlinkMbps: 10, rttMs: 50, saveData: false },
+  clientHints: {
+    supported: true,
+    reason: null,
+    lowEntropy: {
+      brands: [{ brand: "Chromium", version: "151" }],
+      mobile: false,
+      platform: "TestOS",
+    },
+    highEntropy: {
+      fullVersionList: [{ brand: "Chromium", version: "151.0.0.0" }],
+      architecture: "arm",
+      bitness: "64",
+      model: "",
+      platformVersion: "1.0",
+      formFactors: ["Desktop"],
+      wow64: false,
+    },
+  },
+  server: {
+    available: true,
+    reason: null,
+    receivedAt: "2026-08-13T04:00:00.000Z",
+    headers: {
+      "user-agent": "server test UA",
+      "sec-ch-ua-mobile": "?0",
+    },
+  },
+  analysis: {
+    assessment: "Client Hints：非移动端",
+    assessmentClass: "desktop",
+    source: "服务器收到 ?0",
+    conflict: true,
+    findings: ["服务器收到的 User-Agent 与 navigator.userAgent 不一致"],
+    uaTokens: [],
+    hasUaMobileSignal: false,
+    serverMobile: false,
+    jsMobile: false,
+    uaMismatch: true,
+    chMismatch: false,
+  },
+};
+
+const legacyReport = [
   "浏览器诊断报告",
+  "================",
+  "快速判定: Client Hints：非移动端",
+  "信号冲突: 未发现明显冲突",
+  "",
   "[User-Agent]",
-  "navigator.userAgent: test <script>alert(1)</script>",
-  "[Client Hints - JavaScript]",
+  "navigator.userAgent: legacy test UA",
+  "UA 移动关键词: 未命中",
+  "",
+  "[Client Hints - Server Request Headers]",
+  "sec-ch-ua-mobile: ?0",
+  "",
   "[Display]",
-  "[Input]",
-  "[Device / Locale / Network]",
-  "[Server Header Echo]",
+  "layout viewport: 1280 × 720 px",
+  "devicePixelRatio: 2",
 ].join("\n");
 
 test("serves assets with Client Hint negotiation and security headers", async () => {
@@ -95,7 +205,7 @@ test("creates a private report link with a seven-day TTL", async () => {
         Origin: "https://diagnostics.example",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ report: sampleReport }),
+      body: JSON.stringify({ data: sampleData }),
     }),
     env,
   );
@@ -106,7 +216,8 @@ test("creates a private report link with a seven-day TTL", async () => {
   assert.equal(payload.path, `/r/${payload.id}`);
   assert.equal(reportWrites.at(-1).key, `report:${payload.id}`);
   assert.equal(reportWrites.at(-1).options.expirationTtl, 7 * 24 * 60 * 60);
-  assert.equal(JSON.parse(reportWrites.at(-1).value).report, sampleReport);
+  assert.equal(JSON.parse(reportWrites.at(-1).value).version, 2);
+  assert.deepEqual(JSON.parse(reportWrites.at(-1).value).data, sampleData);
 });
 
 test("renders saved reports as escaped, non-indexed HTML", async () => {
@@ -117,7 +228,7 @@ test("renders saved reports as escaped, non-indexed HTML", async () => {
         Origin: "https://diagnostics.example",
         "Content-Type": "application/json; charset=utf-8",
       },
-      body: JSON.stringify({ report: sampleReport }),
+      body: JSON.stringify({ data: sampleData }),
     }),
     env,
   );
@@ -128,9 +239,36 @@ test("renders saved reports as escaped, non-indexed HTML", async () => {
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type"), /^text\/html/);
   assert.equal(response.headers.get("x-robots-tag"), "noindex, nofollow, noarchive");
+  assert.match(html, /报告结论/);
+  assert.match(html, /快速检查/);
+  assert.match(html, /Client Hints：非移动端/);
+  assert.match(html, /User-Agent 与判定信号/);
+  assert.match(html, /服务器实际收到的请求头/);
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
-  assert.match(html, /任何获得此链接的人都可以查看这份报告/);
+  assert.doesNotMatch(html, /<pre class="report-content">/);
+});
+
+test("renders legacy text reports with the structured report layout", async () => {
+  const id = "22222222222222222222222222222222";
+  reportStore.set(
+    `report:${id}`,
+    JSON.stringify({
+      version: 1,
+      report: legacyReport,
+      createdAt: new Date(Date.now() - 60_000).toISOString(),
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }),
+  );
+
+  const response = await worker.fetch(new Request(`https://diagnostics.example/r/${id}`), env);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /这是旧版报告，内容已按诊断类别重新整理/);
+  assert.match(html, /User-Agent 与判定信号/);
+  assert.match(html, /屏幕与视口/);
+  assert.doesNotMatch(html, /<pre class="report-content">/);
 });
 
 test("rejects invalid report creation requests", async () => {
@@ -141,7 +279,7 @@ test("rejects invalid report creation requests", async () => {
         Origin: "https://other.example",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ report: sampleReport }),
+      body: JSON.stringify({ data: sampleData }),
     }),
     env,
   );
@@ -154,7 +292,7 @@ test("rejects invalid report creation requests", async () => {
         Origin: "https://diagnostics.example",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ report: "not a diagnostic report" }),
+      body: JSON.stringify({ data: { generatedAt: "not a diagnostic report" } }),
     }),
     env,
   );
@@ -174,7 +312,7 @@ test("does not render expired or malformed stored reports", async () => {
     `report:${id}`,
     JSON.stringify({
       version: 1,
-      report: sampleReport,
+      report: legacyReport,
       createdAt: "2026-01-01T00:00:00.000Z",
       expiresAt: "not-a-date",
     }),
@@ -200,8 +338,7 @@ test("ships the expected static page", async () => {
   assert.match(html, /下载 JSON/);
   assert.match(html, /id="copyButton"[^>]*disabled/);
   assert.match(html, /正在生成报告/);
-  assert.match(html, /id="reportLink"/);
-  assert.match(html, /id="shareButton"[^>]*disabled/);
+  assert.doesNotMatch(html, /id="reportLink"|id="shareButton"|复制报告链接/);
   assert.match(html, /临时保存 7 天/);
   assert.doesNotMatch(html, /回传内容预览|复制这段内容|reportPreview/);
   assert.match(html, /\.\/app\.js/);
@@ -211,10 +348,12 @@ test("ships the expected static page", async () => {
   assert.match(script, /复制完整报告/);
   assert.match(script, /正在生成报告/);
   assert.match(script, /fetch\("\.\/api\/reports"/);
-  assert.match(script, /复制报告链接/);
-  assert.match(script, /shareButton\.disabled = !canRetry/);
+  assert.match(script, /JSON\.stringify\(\{ data \}\)/);
+  assert.match(script, /报告网址（7 天内有效）/);
+  assert.doesNotMatch(script, /复制报告链接|shareButton|reportLink/);
   assert.doesNotMatch(script, /reportPreview|copyPreviewButton/);
   assert.match(styles, /\.copy-button:disabled/);
   assert.match(styles, /--copy-action: #1677ff/);
-  assert.match(reportStyles, /\.report-content/);
+  assert.match(reportStyles, /\.report-view/);
+  assert.doesNotMatch(reportStyles, /\.report-content/);
 });
