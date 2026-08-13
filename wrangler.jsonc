@@ -8,6 +8,10 @@
     {
       "pattern": "browser.9ba.in",
       "custom_domain": true
+    },
+    {
+      "pattern": "ua.9ba.in",
+      "custom_domain": true
     }
   ],
   "assets": {
