@@ -42,6 +42,12 @@ npm run deploy
 
 Worker 会处理 `/api/headers` 和 `/health`，其他请求交给 Workers Static Assets。所有响应都会附加 `Accept-CH`，让后续同源请求携带浏览器允许提供的 Client Hints。
 
+`wrangler.jsonc` 已固定目标 Cloudflare Account。CLI 部署时仍应使用项目独立认证 Profile，避免依赖全局默认登录：
+
+```bash
+npx wrangler deploy --profile browser-diagnostics
+```
+
 ## GitHub 自动部署
 
 1. 在 Cloudflare Dashboard 打开 **Workers & Pages**，创建或选择 `browser-diagnostics` Worker。
