@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f7f4" />
+    <meta
+      name="description"
+      content="查看并复制浏览器 User-Agent、Client Hints、屏幕与输入设备等诊断信息。"
+    />
+    <title>浏览器诊断信息</title>
+    <link rel="icon" href="./diagnostic-mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__inner">
+        <div class="brand">
+          <img class="brand__mark" src="./diagnostic-mark.svg" alt="" width="42" height="42" />
+          <div>
+            <h1>浏览器诊断信息</h1>
+            <p>用于排查 PC 站与移动站识别问题</p>
+          </div>
+        </div>
+        <div class="actions" aria-label="报告操作">
+          <button class="button button--primary" id="copyButton" type="button">复制完整报告</button>
+          <button class="button" id="downloadButton" type="button">下载 JSON</button>
+          <button class="icon-button" id="refreshButton" type="button" aria-label="刷新诊断信息" title="刷新诊断信息">
+            <span aria-hidden="true">↻</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="privacy-band" aria-label="隐私说明">
+        <div class="content-width privacy-band__inner">
+          <span class="privacy-band__indicator" aria-hidden="true"></span>
+          <p>信息只在本页整理；不会读取或复制 Cookie、账号信息和完整 URL 参数。</p>
+          <span id="collectionStatus" class="collection-status" role="status">正在采集…</span>
+        </div>
+      </section>
+
+      <section class="summary-section content-width" aria-labelledby="summaryTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">本次访问</p>
+            <h2 id="summaryTitle">快速检查</h2>
+          </div>
+          <div id="deviceAssessment" class="assessment assessment--neutral">分析中</div>
+        </div>
+
+        <div class="signal-grid" id="signalGrid" aria-live="polite"></div>
+        <div class="finding finding--neutral" id="finding" role="status">
+          正在比较浏览器与服务器端信号…
+        </div>
+      </section>
+
+      <section class="details-band">
+        <div class="content-width">
+          <div class="section-heading section-heading--details">
+            <div>
+              <p class="eyebrow">原始数据</p>
+              <h2>诊断明细</h2>
+            </div>
+            <p class="section-note">“未提供”表示当前浏览器、协议或服务器没有返回该字段。</p>
+          </div>
+          <div id="detailSections" class="detail-sections"></div>
+        </div>
+      </section>
+
+      <section class="report-section content-width" aria-labelledby="reportTitle">
+        <div class="section-heading section-heading--report">
+          <div>
+            <p class="eyebrow">可直接发送</p>
+            <h2 id="reportTitle">回传内容预览</h2>
+          </div>
+          <button class="text-button" id="copyPreviewButton" type="button">复制这段内容</button>
+        </div>
+        <pre id="reportPreview" class="report-preview" tabindex="0">正在生成报告…</pre>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+    <noscript>
+      <div class="noscript-message">此页面需要启用 JavaScript 才能读取浏览器诊断信息。</div>
+    </noscript>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
