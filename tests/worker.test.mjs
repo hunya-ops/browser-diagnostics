@@ -68,13 +68,21 @@ test("returns health status without invoking assets", async () => {
 test("ships the expected static page", async () => {
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
   const script = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
   assert.match(html, /浏览器诊断信息/);
   assert.match(html, /快速检查/);
   assert.match(html, /诊断明细/);
   assert.match(html, /下载 JSON/);
-  assert.match(html, /复制完整报告/);
+  assert.match(html, /id="copyButton"[^>]*disabled/);
+  assert.match(html, /正在生成报告/);
   assert.doesNotMatch(html, /回传内容预览|复制这段内容|reportPreview/);
   assert.match(html, /\.\/app\.js/);
   assert.match(script, /copyText\(currentReport\)/);
+  assert.match(script, /copyButton\.disabled = true/);
+  assert.match(script, /copyButton\.disabled = false/);
+  assert.match(script, /复制完整报告/);
+  assert.match(script, /正在生成报告/);
   assert.doesNotMatch(script, /reportPreview|copyPreviewButton/);
+  assert.match(styles, /\.copy-button:disabled/);
+  assert.match(styles, /--copy-action: #1677ff/);
 });

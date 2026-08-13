@@ -17,6 +17,11 @@
   --code: #18211e;
   --code-ink: #e5ede9;
   --focus: #0b6ee8;
+  --copy-action: #1677ff;
+  --copy-action-hover: #0958d9;
+  --copy-action-pressed: #003eb3;
+  --copy-disabled: #d9dee3;
+  --copy-disabled-ink: #77818a;
   --radius: 6px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -326,8 +331,30 @@ summary:focus-visible {
   width: min(100%, 440px);
   min-height: 68px;
   padding: 15px 28px;
-  box-shadow: 0 8px 22px rgb(8 120 109 / 18%);
+  border-color: var(--copy-action);
+  background: var(--copy-action);
+  box-shadow: 0 8px 22px rgb(22 119 255 / 24%);
+  color: #ffffff;
   font-size: 19px;
+}
+
+.copy-button:hover:not(:disabled) {
+  border-color: var(--copy-action-hover);
+  background: var(--copy-action-hover);
+  color: #ffffff;
+}
+
+.copy-button:active:not(:disabled) {
+  border-color: var(--copy-action-pressed);
+  background: var(--copy-action-pressed);
+}
+
+.copy-button:disabled {
+  border-color: var(--copy-disabled);
+  background: var(--copy-disabled);
+  box-shadow: none;
+  color: var(--copy-disabled-ink);
+  cursor: not-allowed;
 }
 
 .details-band {
@@ -639,6 +666,17 @@ summary:focus-visible {
 
   .button--primary:hover {
     color: #071a17;
+  }
+
+  .copy-button,
+  .copy-button:hover:not(:disabled) {
+    color: #ffffff;
+  }
+
+  .copy-button:disabled {
+    border-color: #46504c;
+    background: #46504c;
+    color: #aeb9b4;
   }
 
   .finding--warning {

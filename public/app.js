@@ -655,12 +655,26 @@ function render(data) {
 async function collect() {
   elements.collectionStatus.textContent = "正在采集…";
   elements.refreshButton.disabled = true;
+  elements.copyButton.disabled = true;
+  elements.copyButton.textContent = "正在生成报告…";
+  currentData = null;
+  currentReport = "";
 
-  const local = collectLocalData();
-  const [clientHints, server] = await Promise.all([readClientHints(), readServerHeaders()]);
-  currentData = { ...local, clientHints, server };
-  render(currentData);
-  elements.refreshButton.disabled = false;
+  try {
+    const local = collectLocalData();
+    const [clientHints, server] = await Promise.all([readClientHints(), readServerHeaders()]);
+    currentData = { ...local, clientHints, server };
+    render(currentData);
+    elements.copyButton.textContent = "复制完整报告";
+    elements.copyButton.disabled = false;
+  } catch {
+    currentData = null;
+    currentReport = "";
+    elements.collectionStatus.textContent = "报告生成失败，请刷新重试";
+    elements.copyButton.textContent = "报告生成失败";
+  } finally {
+    elements.refreshButton.disabled = false;
+  }
 }
 
 async function copyText(text) {
@@ -691,6 +705,8 @@ function showToast(message) {
 }
 
 async function handleCopy() {
+  if (!currentReport || elements.copyButton.disabled) return;
+
   try {
     await copyText(currentReport);
     showToast("完整诊断报告已复制，可直接发送给技术人员。 ");
